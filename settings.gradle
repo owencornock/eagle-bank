@@ -1,0 +1,4 @@
+rootProject.name = 'eagle-bank'
+include 'eagle-bank-domain', 'eagle-bank-logic'
+include 'eagle-bank-app'
+include 'eagle-bank-repository'

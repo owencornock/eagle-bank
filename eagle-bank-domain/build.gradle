@@ -1,0 +1,76 @@
+plugins {
+	id 'java'
+	id 'jacoco'
+}
+
+group = 'com.eaglebank'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain { languageVersion = JavaLanguageVersion.of(javaVersion) }
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compileOnly "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+	// JUnit Jupiter (engine + API)
+	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+	// JUnit Platform Launcher
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
+}
+
+test {
+	useJUnitPlatform()
+}
+
+jacoco {
+	toolVersion = "${jacocoVersion}"
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		csv.required = false
+		html.required = true
+		html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+	}
+	afterEvaluate {
+		classDirectories.setFrom(
+				files(classDirectories.files.collect {
+					fileTree(dir: it, exclude: [
+							'**/com/eaglebank/eaglebankdomain/exception/**'
+					])
+				})
+		)
+	}
+}
+
+jacocoTestCoverageVerification {
+	afterEvaluate {
+		classDirectories.setFrom(
+				files(classDirectories.files.collect {
+					fileTree(dir: it, exclude: [
+							'**/com/eaglebank/eaglebankdomain/exception/**'
+					])
+				})
+		)
+	}
+	violationRules {
+		rule {
+			limit {
+				minimum = 1.0
+			}
+		}
+	}
+}
+
+test {
+	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}

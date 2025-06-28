@@ -1,0 +1,475 @@
+openapi: 3.0.3
+info:
+  title: Eagle Bank API
+  version: 1.0.0
+  description: API for Eagle Bank with user, account, and transaction management.
+servers:
+  - url: http://localhost:8080
+
+security:
+  - bearerAuth: [ ]
+
+tags:
+  - name: Auth
+    description: Authentication operations
+  - name: Users
+    description: User registration & profile management
+  - name: Accounts
+    description: Bank account management
+  - name: Transactions
+    description: Deposit & withdrawal operations
+
+paths:
+  /v1/auth/login:
+    post:
+      tags: [ Auth ]
+      summary: Authenticate and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /v1/users:
+    post:
+      tags: [ Users ]
+      summary: Sign up for Eagle Bank
+      security: [ ]                   # public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [ Users ]
+      summary: Fetch your own user details
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Forbidden - cannot access other user's details
+        '404':
+          description: User not found
+
+    patch:
+      tags: [ Users ]
+      summary: Update your user details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - cannot update other user's details
+        '404':
+          description: User not found
+
+    delete:
+      tags: [ Users ]
+      summary: Delete your user account
+      responses:
+        '204':
+          description: User deleted successfully
+        '403':
+          description: Forbidden - cannot delete other user's account
+        '404':
+          description: User not found
+        '409':
+          description: Conflict - user has active accounts
+
+  /v1/accounts:
+    post:
+      tags: [ Accounts ]
+      summary: Create a new bank account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [ Accounts ]
+      summary: List all accounts for the current user
+      responses:
+        '200':
+          description: List of accounts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponse'
+
+  /v1/accounts/{accountId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [ Accounts ]
+      summary: Fetch a single account by ID
+      responses:
+        '200':
+          description: Account details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '403':
+          description: Forbidden - cannot access other user's account
+        '404':
+          description: Account not found
+
+    patch:
+      tags: [ Accounts ]
+      summary: Update an existing account's name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAccountRequest'
+      responses:
+        '200':
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - cannot update other user's account
+        '404':
+          description: Account not found
+
+    delete:
+      tags: [ Accounts ]
+      summary: Delete an account by ID
+      responses:
+        '204':
+          description: Account deleted successfully
+        '403':
+          description: Forbidden - cannot delete other user's account
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/transactions:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    post:
+      tags: [ Transactions ]
+      summary: Create a new transaction (deposit or withdrawal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - cannot transact on other user's account
+        '404':
+          description: Account not found
+        '422':
+          description: Unprocessable Entity – insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [ Transactions ]
+      summary: List all transactions for an account
+      responses:
+        '200':
+          description: List of transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionResponse'
+        '403':
+          description: Forbidden - cannot access other user's transactions
+        '404':
+          description: Account not found
+
+  /v1/accounts/{accountId}/transactions/{transactionId}:
+    parameters:
+      - name: accountId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: transactionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+
+    get:
+      tags: [ Transactions ]
+      summary: Fetch a specific transaction by ID
+      responses:
+        '200':
+          description: Transaction details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '403':
+          description: Forbidden - cannot access other user's transaction
+        '404':
+          description: Transaction or account not found
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [ error ]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+      required:
+        - email
+        - password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+
+    CreateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        dob:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          maxLength: 100
+      required:
+        - firstName
+        - lastName
+        - dob
+        - email
+        - password
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        dob:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dob:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+
+    CreateAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+      required:
+        - name
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+      required:
+        - name
+
+    AccountResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
+        balance:
+          type: number
+
+    CreateTransactionRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - DEPOSIT
+            - WITHDRAWAL
+        amount:
+          type: number
+          minimum: 0
+      required:
+        - type
+        - amount
+
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            - DEPOSIT
+            - WITHDRAWAL
+        amount:
+          type: number
+        timestamp:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
