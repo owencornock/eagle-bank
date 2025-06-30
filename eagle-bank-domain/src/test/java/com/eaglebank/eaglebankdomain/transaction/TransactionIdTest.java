@@ -44,14 +44,12 @@ class TransactionIdTest {
         TransactionId id2 = TransactionId.of(uuid);
         TransactionId id3 = TransactionId.of(UUID.randomUUID());
 
-        // Test equals
         assertEquals(id1, id2, "TransactionIds with same UUID should be equal");
         assertNotEquals(id1, id3, "TransactionIds with different UUIDs should not be equal");
-        assertNotEquals(id1, null, "TransactionId should not be equal to null");
-        assertNotEquals(id1, "not a TransactionId",
+        assertNotEquals(null, id1, "TransactionId should not be equal to null");
+        assertNotEquals("not a TransactionId", id1,
                 "TransactionId should not be equal to other types");
 
-        // Test hashCode
         assertEquals(id1.hashCode(), id2.hashCode(),
                 "Equal TransactionIds should have same hash code");
     }

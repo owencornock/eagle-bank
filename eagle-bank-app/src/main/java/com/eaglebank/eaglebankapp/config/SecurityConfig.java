@@ -28,47 +28,35 @@ public class SecurityConfig {
         this.jwtProvider = jwtProvider;
     }
 
-    // your existing bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // new: define how HTTP security works—including JWT filter
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1) turn off CSRF entirely
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 2) make the session stateless
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // 3) authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // allow signup and login anonymously
                         .requestMatchers(HttpMethod.POST, "/v1/users").permitAll()
                         .requestMatchers(HttpMethod.POST, "/v1/auth/login").permitAll()
 
-                        // allow swagger / openapi
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
-                        // everything else requires a valid JWT
                         .anyRequest().authenticated()
                 )
 
-                // 4) insert your JWT filter
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
 
-                // 5) (optional) keep Spring Security happy with defaults
                 .httpBasic(Customizer.withDefaults())
         ;
 
         return http.build();
     }
 
-    // new: a simple JWT‐parsing filter
     @Bean
     public OncePerRequestFilter jwtFilter() {
         return new OncePerRequestFilter() {
@@ -83,7 +71,6 @@ public class SecurityConfig {
                     try {
                         String userId = jwtProvider.getUserId(token);
                         var auth = new UsernamePasswordAuthenticationToken(userId, null, java.util.List.of());
-                        // set the authenticated user’s ID as the “principal”
                         org.springframework.security.core.context.SecurityContextHolder
                                 .getContext().setAuthentication(auth);
                     } catch (io.jsonwebtoken.JwtException e) {

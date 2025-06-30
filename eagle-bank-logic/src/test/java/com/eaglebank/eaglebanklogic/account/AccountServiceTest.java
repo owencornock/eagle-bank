@@ -26,7 +26,6 @@ class AccountServiceTest {
     private AccountRepository repo;
     private AccountService service;
 
-    // shared fields
     private UserId ownerId;
     private AccountName accountName;
     private Account existingAccount;
@@ -36,12 +35,10 @@ class AccountServiceTest {
         MockitoAnnotations.openMocks(this);
         service = new AccountService(repo);
 
-        // initialize test data
         ownerId = UserId.newId();
         accountName = new AccountName("Test Account");
         existingAccount = Account.create(ownerId, accountName);
 
-        // Default mock behavior
         when(repo.save(any(Account.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 

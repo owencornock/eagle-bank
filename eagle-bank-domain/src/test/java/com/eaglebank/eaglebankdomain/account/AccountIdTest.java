@@ -44,13 +44,11 @@ class AccountIdTest {
         AccountId id2 = AccountId.of(uuid);
         AccountId id3 = AccountId.of(UUID.randomUUID());
 
-        // Test equals
         assertEquals(id1, id2, "AccountIds with same UUID should be equal");
         assertNotEquals(id1, id3, "AccountIds with different UUIDs should not be equal");
-        assertNotEquals(id1, null, "AccountId should not be equal to null");
-        assertNotEquals(id1, "not an AccountId", "AccountId should not be equal to other types");
+        assertNotEquals(null, id1, "AccountId should not be equal to null");
+        assertNotEquals("not an AccountId", id1, "AccountId should not be equal to other types");
 
-        // Test hashCode
         assertEquals(id1.hashCode(), id2.hashCode(),
                 "Equal AccountIds should have same hash code");
     }

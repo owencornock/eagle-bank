@@ -11,7 +11,6 @@ public record Balance(BigDecimal value) {
         if (value.signum() < 0) {
             throw new InvalidUserDataException("Balance cannot be negative");
         }
-        // Normalize to 2 decimal places
         value = value.setScale(2, java.math.RoundingMode.UNNECESSARY);
     }
 }

@@ -126,10 +126,8 @@ class UserServiceTest {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(expectedUser));
 
-        // Act
         Optional<User> result = service.findByEmail(email);
 
-        // Assert
         assertTrue(result.isPresent());
         assertEquals(expectedUser, result.get());
         verify(userRepository).findByEmail(email);
@@ -137,11 +135,9 @@ class UserServiceTest {
 
     @Test
     void shouldReturnEmptyOptionalWhenEmailNotFound() {
-        // Arrange
         EmailAddress email = new EmailAddress("nonexistent@example.com");
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
 
-        // Act
         Optional<User> result = service.findByEmail(email);
 
         assertTrue(result.isEmpty());
