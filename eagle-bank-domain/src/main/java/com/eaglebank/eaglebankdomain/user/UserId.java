@@ -10,9 +10,6 @@ public record UserId(UUID value) {
         return new UserId(UUID.randomUUID());
     }
 
-    /**
-     * Wrap an existing UUID.
-     */
     public static UserId of(UUID id) {
         return new UserId(Objects.requireNonNull(id));
     }

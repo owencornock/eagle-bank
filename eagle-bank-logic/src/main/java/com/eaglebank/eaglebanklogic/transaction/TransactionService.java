@@ -73,18 +73,15 @@ public class TransactionService {
     }
 
     public Transaction fetchTransaction(AccountId accountId, TransactionId txnId, UserId callerId) {
-        // authorize on account
         Account account = accountRepo.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
         if (!account.getOwnerId().equals(callerId)) {
             throw new ForbiddenException("Cannot fetch transaction on another user's account");
         }
 
-        // fetch transaction
         Transaction txn = txnRepo.findById(txnId)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction not found"));
 
-        // ensure it belongs to this account
         if (!txn.getAccountId().equals(accountId)) {
             throw new ResourceNotFoundException("Transaction not found for given account");
         }

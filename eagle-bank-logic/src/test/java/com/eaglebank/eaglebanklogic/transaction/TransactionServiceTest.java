@@ -27,7 +27,6 @@ class TransactionServiceTest {
     private AccountRepository accountRepo;
     private TransactionService service;
 
-    // shared fields
     private UserId ownerId;
     private AccountId accountId;
     private Account account;
@@ -38,13 +37,11 @@ class TransactionServiceTest {
         MockitoAnnotations.openMocks(this);
         service = new TransactionService(txnRepo, accountRepo);
 
-        // initialize test data
         ownerId = UserId.newId();
         accountId = AccountId.newId();
         account = Account.create(ownerId, new AccountName("Test Account"));
         amount = new Amount(new BigDecimal("100.00"));
 
-        // Default mock behavior
         when(txnRepo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(accountRepo.save(any(Account.class))).thenAnswer(inv -> inv.getArgument(0));
     }
