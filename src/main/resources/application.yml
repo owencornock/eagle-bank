@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: eagle-bank
+  datasource:
+    url: jdbc:postgresql://localhost:5432/eaglebank
+    username: eaglebank_user
+    password: your_secure_password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true

@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/eaglebank
+      - SPRING_DATASOURCE_USERNAME=eaglebank_user
+      - SPRING_DATASOURCE_PASSWORD=your_secure_password
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - eagle-network
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=eaglebank
+      - POSTGRES_USER=eaglebank_user
+      - POSTGRES_PASSWORD=your_secure_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eaglebank_user -d eaglebank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eagle-network
+
+volumes:
+  postgres-data:
+
+networks:
+  eagle-network:
+    driver: bridge
