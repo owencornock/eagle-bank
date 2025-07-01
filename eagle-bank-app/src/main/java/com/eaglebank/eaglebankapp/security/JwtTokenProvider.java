@@ -23,11 +23,17 @@ public class JwtTokenProvider {
     }
 
     public String getUserId(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .getSubject();
+        } catch (Exception e) {
+            System.err.println("JWT Token validation failed: " + e.getMessage());
+            throw e;
+        }
     }
+
 }

@@ -114,3 +114,39 @@ spec:
   ports:
   - port: 8080
     targetPort: 8080
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eagle-bank-frontend
+  namespace: eagle-bank-local
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eagle-bank-frontend
+  template:
+    metadata:
+      labels:
+        app: eagle-bank-frontend
+    spec:
+      containers:
+        - name: eagle-bank-frontend
+          image: eagle-bank-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eagle-bank-frontend
+  namespace: eagle-bank-local
+spec:
+  type: LoadBalancer
+  selector:
+    app: eagle-bank-frontend
+  ports:
+    - port: 80
+      targetPort: 80

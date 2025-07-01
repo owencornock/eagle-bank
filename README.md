@@ -1,87 +1,162 @@
 # 🦅 Eagle Bank
 
-A multi-module Spring Boot + React application providing a RESTful API for user, account, and transaction management at
-Eagle Bank.
+A full-stack banking application built with Spring Boot and React, providing comprehensive banking services including user management, account operations, and transaction handling.
 
 ---
 
 ## 🚀 Features
 
 - **Users**
-    - Sign up, fetch, update, delete
+    - Sign up, login, profile management
     - JWT-based authentication
 - **Accounts**
     - Create, list, fetch, update, delete
+    - Multiple account support per user
 - **Transactions**
-    - Deposit & withdrawal
-    - List & fetch history
-- **Docs**
+    - Deposit & withdrawal operations
+    - Transaction history tracking
+- **Modern UI**
+    - Responsive React frontend
+    - Real-time updates
+    - Secure authentication flow
+- **API Documentation**
     - OpenAPI (Swagger UI)
     - Postman collection
 
 ---
 
-## 📦 Modules
-
-eagle-bank/ ← root
-├── eagle-bank-domain ← domain model & value types
-├── eagle-bank-repository ← Spring Data adapters
-├── eagle-bank-logic ← services & business logic
-├── eagle-bank-app ← Spring Boot application And API
-
----
-
 ## 🛠 Prerequisites
 
-- Java 21 (via SDKMAN / homebrew / your JDK of choice)
-- Gradle (wrapper included)
-- (Optional) Docker & Docker Compose if you containerize
+- Backend:
+    - Java 21 (via SDKMAN / homebrew)
+    - Gradle (wrapper included)
+- Frontend:
+    - Node.js 20+
+    - pnpm (preferred package manager)
+- Optional:
+    - Docker & Docker Compose for containerization
+    - PostgreSQL (if not using Docker)
 
 ---
 
 ## ⚙️ Backend Setup
 
-1. **Configure**  
-   Copy and tweak `eagle-bank-app/src/main/resources/application.yml` as needed (e.g. JWT secret, H2 vs Postgres).
-
-2. **Build & run**
+1. **Configure**
    ```bash
-   # from project root
+   # Copy and configure application.yml
+   cp eagle-bank-app/src/main/resources/application.yml.example eagle-bank-app/src/main/resources/application.yml
+   ```
+
+2. **Build & Run**
+   ```bash
    ./gradlew clean build
    ./gradlew :eagle-bank-app:bootRun
+   ```
 
-3. **Smoke Test**
-    ```bash
-   curl -X GET http://localhost:8080/actuator/health
-4. **Api Docs**
-    ```bash
-   http://localhost:8080/swagger-ui/index.html
+## 🎨 Frontend Setup
 
-## ⚙️ Coverage Setup
+1. **Install Dependencies**
+   ```bash
+   cd eagle-bank-frontend
+   pnpm install
+   ```
 
-Jacoco is used, and fail coverage when below 95% in each module
+2. **Configure Environment**
+   ```bash
+   cp .env.example .env
+   ```
 
-## 📋 Postman Collection
+3. **Run Development Server**
+   ```bash
+   pnpm dev
+   ```
 
-Import docs/eagle-bank.postman.json into Postman.
-Variables:
+4. **Access Application**
+   ```
+   http://localhost:5173
+   ```
 
-{{base_url}} → http://localhost:8080
-{{jwt_token}} → (set after login)
-{{userId}} → (set after signup)
+## 🐳 Docker Setup
 
-## 🔧 Common Tasks
+Build and run both frontend and backend:
 
-Generate new build
-./gradlew clean build
-Run only user-controller tests
-./gradlew :eagle-bank-app:test --tests *UserControllerTest
-Open coverage report
-open eagle-bank-app/build/jacocoHtml/index.html
+## 📚 Documentation
 
-## 🙋‍♂️ Contributing
+- **API Docs**: http://localhost:8080/swagger-ui/index.html
+- **Postman**: Import `docs/eagle-bank.postman.json`
+    - Variables:
+        - `{{base_url}}` → http://localhost:8080
+        - `{{jwt_token}}` → (set after login)
+        - `{{userId}}` → (set after signup)
 
-Fork & clone
-Create feature branch (git checkout -b feat/xyz)
-Commit & PR
-Ensure tests & coverage pass
+## ⚡ Development
+
+### Code Coverage
+- Jacoco is configured for backend code coverage
+- Minimum 95% coverage required per module
+- View report: `open eagle-bank-app/build/jacocoHtml/index.html`
+
+### Common Commands
+
+## 🔒 Security
+
+- JWT-based authentication
+- CORS configuration for local development
+- Secure password hashing
+- Protected API endpoints
+
+## 🤝 Contributing
+
+1. Fork & clone the repository
+2. Create feature branch (`git checkout -b feat/xyz`)
+3. Commit changes & push
+4. Open Pull Request
+5. Ensure all tests pass and coverage requirements are met
+
+## 🚢 Kubernetes Deployment
+
+### Prerequisites
+- Kubernetes cluster (local or cloud)
+- kubectl CLI tool
+- Docker
+- Minikube (for local development)
+
+### Local Deployment
+
+1. **Start Minikube** (if using local cluster)
+   ```bash
+   minikube start
+   ```
+
+2. **Deploy to Kubernetes**
+   ```bash
+   # Make scripts executable
+   chmod +x deploy.sh cleanup.sh
+
+   # Deploy the application
+   ./deploy.sh
+   ```
+
+   This script will:
+   - Build Docker images for both frontend and backend
+   - Apply Kubernetes configurations
+   - Wait for pods to be ready
+   - Display service URLs
+
+3. **Access the Application**
+   - Frontend: http://localhost
+   - Backend API: http://localhost:8080
+   - Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+4. **View Deployment Status**
+   ```bash
+   kubectl get pods -n eagle-bank-local
+   kubectl get services -n eagle-bank-local
+   ```
+
+### Cleanup
+
+To remove all deployed resources:
+```bash
+./cleanup.sh
+```
