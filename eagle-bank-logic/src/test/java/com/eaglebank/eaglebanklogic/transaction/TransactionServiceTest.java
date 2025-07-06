@@ -12,6 +12,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +33,9 @@ class TransactionServiceTest {
     private AccountId accountId;
     private Account account;
     private Amount amount;
+    private final Currency gbp = Currency.getInstance("GBP");
+    private final Currency usd = Currency.getInstance("USD");
+    private final Instant now = Instant.now();
 
     @BeforeEach
     void init() {
@@ -39,12 +44,95 @@ class TransactionServiceTest {
 
         ownerId = UserId.newId();
         accountId = AccountId.newId();
-        account = Account.create(ownerId, new AccountName("Test Account"));
+        account = Account.rehydrate(
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(BigDecimal.ZERO),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
+        );
         amount = new Amount(new BigDecimal("100.00"));
 
         when(txnRepo.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(accountRepo.save(any(Account.class))).thenAnswer(inv -> inv.getArgument(0));
     }
+
+    @Test
+    void shouldProcessDepositWithCorrectCurrency() {
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
+
+        Transaction result = service.deposit(accountId, ownerId, amount);
+
+        assertNotNull(result.getId());
+        assertEquals(accountId, result.getAccountId());
+        assertEquals(TransactionType.DEPOSIT, result.getType());
+        assertEquals(amount, result.getAmount());
+        assertEquals(gbp, result.getCurrency());
+
+        verify(txnRepo).save(any(Transaction.class));
+        verify(accountRepo).save(any(Account.class));
+    }
+
+    @Test
+    void shouldProcessWithdrawalWithCorrectCurrency() {
+        Account accountWithBalance = Account.rehydrate(
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(new BigDecimal("200.00")),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
+        );
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(accountWithBalance));
+
+        Transaction result = service.withdraw(accountId, ownerId, amount);
+
+        assertNotNull(result.getId());
+        assertEquals(accountId, result.getAccountId());
+        assertEquals(TransactionType.WITHDRAWAL, result.getType());
+        assertEquals(amount, result.getAmount());
+        assertEquals(gbp, result.getCurrency());
+
+        verify(txnRepo).save(any(Transaction.class));
+        verify(accountRepo).save(any(Account.class));
+    }
+
+    @Test
+    void shouldFetchTransactionWithMatchingCurrency() {
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
+        Transaction transaction = Transaction.create(accountId, TransactionType.DEPOSIT, amount, gbp);
+        TransactionId txnId = transaction.getId();
+        when(txnRepo.findById(txnId)).thenReturn(Optional.of(transaction));
+
+        Transaction result = service.fetchTransaction(accountId, txnId, ownerId);
+
+        assertSame(transaction, result);
+        assertEquals(gbp, result.getCurrency());
+        verify(txnRepo).findById(txnId);
+    }
+
+    @Test
+    void shouldThrowInvalidUserDataExceptionWhenCurrencyMismatch() {
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
+        // Create transaction with USD while account is in GBP
+        Transaction transaction = Transaction.create(accountId, TransactionType.DEPOSIT, amount, usd);
+        TransactionId txnId = transaction.getId();
+        when(txnRepo.findById(txnId)).thenReturn(Optional.of(transaction));
+
+        assertThrows(InvalidUserDataException.class, () ->
+                service.fetchTransaction(accountId, txnId, ownerId)
+        );
+    }
+
 
     @Test
     void shouldProcessDepositWhenAccountExists() {
@@ -65,8 +153,16 @@ class TransactionServiceTest {
     void shouldUpdateBalanceAfterDeposit() {
         BigDecimal initialBalance = new BigDecimal("50.00");
         Account accountWithBalance = Account.rehydrate(
-                accountId, ownerId, account.getName(),
-                new Balance(initialBalance)
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(initialBalance),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
         );
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(accountWithBalance));
 
@@ -80,8 +176,16 @@ class TransactionServiceTest {
     @Test
     void shouldProcessWithdrawalWhenSufficientFunds() {
         Account accountWithBalance = Account.rehydrate(
-                accountId, ownerId, account.getName(),
-                new Balance(new BigDecimal("200.00"))
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(new BigDecimal("200.00")),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
         );
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(accountWithBalance));
 
@@ -96,11 +200,20 @@ class TransactionServiceTest {
         verify(accountRepo).save(any(Account.class));
     }
 
+
     @Test
     void shouldThrowInvalidUserDataExceptionWhenInsufficientFunds() {
         Account accountWithLowBalance = Account.rehydrate(
-                accountId, ownerId, account.getName(),
-                new Balance(new BigDecimal("50.00"))
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(new BigDecimal("50.00")),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
         );
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(accountWithLowBalance));
 
@@ -116,8 +229,8 @@ class TransactionServiceTest {
     void shouldListTransactionsForAccountOwner() {
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
         List<Transaction> transactions = List.of(
-                Transaction.create(accountId, TransactionType.DEPOSIT, amount),
-                Transaction.create(accountId, TransactionType.WITHDRAWAL, amount)
+                Transaction.create(accountId, TransactionType.DEPOSIT, amount, gbp),
+                Transaction.create(accountId, TransactionType.WITHDRAWAL, amount, gbp)
         );
         when(txnRepo.findByAccount(accountId)).thenReturn(transactions);
 
@@ -130,7 +243,7 @@ class TransactionServiceTest {
     @Test
     void shouldFetchTransactionWhenAuthorized() {
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
-        Transaction transaction = Transaction.create(accountId, TransactionType.DEPOSIT, amount);
+        Transaction transaction = Transaction.create(accountId, TransactionType.DEPOSIT, amount, gbp);
         TransactionId txnId = transaction.getId();
         when(txnRepo.findById(txnId)).thenReturn(Optional.of(transaction));
 
@@ -193,7 +306,7 @@ class TransactionServiceTest {
     void shouldThrowResourceNotFoundWhenTransactionBelongsToOtherAccount() {
         when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
         AccountId otherAccountId = AccountId.newId();
-        Transaction transaction = Transaction.create(otherAccountId, TransactionType.DEPOSIT, amount);
+        Transaction transaction = Transaction.create(otherAccountId, TransactionType.DEPOSIT, amount, gbp);
         when(txnRepo.findById(transaction.getId())).thenReturn(Optional.of(transaction));
 
         assertThrows(ResourceNotFoundException.class, () ->
@@ -262,5 +375,46 @@ class TransactionServiceTest {
 
         verify(txnRepo, never()).save(any());
         verify(accountRepo, never()).save(any());
+    }
+
+    @Test
+    void shouldListTransactionsWithCorrectCurrency() {
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(account));
+        List<Transaction> transactions = List.of(
+                Transaction.create(accountId, TransactionType.DEPOSIT, amount, gbp),
+                Transaction.create(accountId, TransactionType.WITHDRAWAL, amount, gbp)
+        );
+        when(txnRepo.findByAccount(accountId)).thenReturn(transactions);
+
+        List<Transaction> result = service.listTransactions(accountId, ownerId);
+
+        assertEquals(2, result.size());
+        result.forEach(txn -> assertEquals(gbp, txn.getCurrency()));
+        verify(txnRepo).findByAccount(accountId);
+    }
+
+    @Test
+    void shouldUpdateBalanceAfterDepositMaintainingCurrency() {
+        BigDecimal initialBalance = new BigDecimal("50.00");
+        Account accountWithBalance = Account.rehydrate(
+                accountId,
+                ownerId,
+                new AccountName("Test Account"),
+                new Balance(initialBalance),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                gbp,
+                now,
+                now
+        );
+        when(accountRepo.findById(accountId)).thenReturn(Optional.of(accountWithBalance));
+
+        Transaction result = service.deposit(accountId, ownerId, amount);
+
+        assertEquals(gbp, result.getCurrency());
+        verify(accountRepo).save(argThat(updatedAccount ->
+                updatedAccount.getBalance().value().equals(initialBalance.add(amount.value())) &&
+                        updatedAccount.getCurrency().equals(gbp)));
     }
 }

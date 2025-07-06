@@ -36,4 +36,19 @@ public class UserEntity {
 
     @Column(name="password_hash", nullable=false)
     private String passwordHash;
+    
+    @Column(name="phone_number", nullable=false)
+    private String phoneNumber;
+    
+    @Column(name="address_line1", nullable=false, length=100)
+    private String addressLine1;
+    
+    @Column(name="address_town", nullable=false, length=50)
+    private String addressTown;
+    
+    @Column(name="address_county", nullable=false, length=50)
+    private String addressCounty;
+    
+    @Column(name="address_postcode", nullable=false, length=8)
+    private String addressPostcode;
 }

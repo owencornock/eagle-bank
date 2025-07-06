@@ -1,9 +1,6 @@
 package com.eaglebank.eaglebanklogic.account;
 
-import com.eaglebank.eaglebankdomain.account.Account;
-import com.eaglebank.eaglebankdomain.account.AccountId;
-import com.eaglebank.eaglebankdomain.account.AccountName;
-import com.eaglebank.eaglebankdomain.account.AccountRepository;
+import com.eaglebank.eaglebankdomain.account.*;
 import com.eaglebank.eaglebankdomain.exception.ForbiddenException;
 import com.eaglebank.eaglebankdomain.exception.ResourceNotFoundException;
 import com.eaglebank.eaglebankdomain.user.UserId;
@@ -13,6 +10,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +28,8 @@ class AccountServiceTest {
     private UserId ownerId;
     private AccountName accountName;
     private Account existingAccount;
+    private final Currency defaultCurrency = Currency.getInstance("GBP");
+    private final Instant now = Instant.now();
 
     @BeforeEach
     void init() {
@@ -37,20 +38,38 @@ class AccountServiceTest {
 
         ownerId = UserId.newId();
         accountName = new AccountName("Test Account");
-        existingAccount = Account.create(ownerId, accountName);
+        existingAccount = Account.rehydrate(
+                AccountId.newId(),
+                ownerId,
+                accountName,
+                new Balance(BigDecimal.ZERO),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.CHECKING,
+                defaultCurrency,
+                now,
+                now
+        );
 
         when(repo.save(any(Account.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
     void shouldCreateAndSaveAccount() {
-        Account result = service.createAccount(ownerId, accountName);
+        Account result = service.createAccount(ownerId, accountName, AccountType.CHECKING);
 
         assertNotNull(result.getId(), "Account ID should be generated");
         assertEquals(ownerId, result.getOwnerId(), "Owner ID should match");
         assertEquals(accountName, result.getName(), "Account name should match");
         assertEquals(BigDecimal.ZERO.setScale(2), result.getBalance().value(),
                 "New account should have zero balance");
+        assertEquals("123456", result.getSortCode().value(),
+                "Sort code should match bank's code");
+        assertNotNull(result.getAccountNumber(), "Account number should be generated");
+        assertTrue(result.getAccountNumber().value().matches("\\d{8}"),
+                "Account number should be 8 digits");
+        assertEquals(AccountType.CHECKING, result.getType(), "Account type should match");
+        assertEquals(defaultCurrency, result.getCurrency(), "Currency should be GBP");
 
         verify(repo).save(any(Account.class));
     }
@@ -58,8 +77,30 @@ class AccountServiceTest {
     @Test
     void shouldListAccountsForOwner() {
         List<Account> accounts = List.of(
-                Account.create(ownerId, new AccountName("Account 1")),
-                Account.create(ownerId, new AccountName("Account 2"))
+                Account.rehydrate(
+                        AccountId.newId(),
+                        ownerId,
+                        new AccountName("Account 1"),
+                        new Balance(BigDecimal.ZERO),
+                        new AccountNumber("12345678"),
+                        new SortCode("123456"),
+                        AccountType.CHECKING,
+                        defaultCurrency,
+                        now,
+                        now
+                ),
+                Account.rehydrate(
+                        AccountId.newId(),
+                        ownerId,
+                        new AccountName("Account 2"),
+                        new Balance(BigDecimal.ZERO),
+                        new AccountNumber("87654321"),
+                        new SortCode("123456"),
+                        AccountType.SAVINGS,
+                        defaultCurrency,
+                        now,
+                        now
+                )
         );
         when(repo.findByOwner(ownerId)).thenReturn(accounts);
 
@@ -68,6 +109,7 @@ class AccountServiceTest {
         assertEquals(2, result.size(), "Should return all accounts");
         verify(repo).findByOwner(ownerId);
     }
+
 
     @Test
     void shouldFetchAccountWhenOwnerMatches() {

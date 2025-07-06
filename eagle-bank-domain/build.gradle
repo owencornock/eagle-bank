@@ -18,9 +18,7 @@ dependencies {
 	compileOnly "org.projectlombok:lombok:${lombokVersion}"
 	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-	// JUnit Jupiter (engine + API)
 	testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
-	// JUnit Platform Launcher
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junitPlatformVersion}"
 }
 

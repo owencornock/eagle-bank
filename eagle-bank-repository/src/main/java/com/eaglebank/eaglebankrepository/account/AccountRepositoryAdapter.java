@@ -4,6 +4,7 @@ import com.eaglebank.eaglebankdomain.account.*;
 import com.eaglebank.eaglebankdomain.user.UserId;
 import org.springframework.stereotype.Repository;
 
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +48,12 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 .userId(a.getOwnerId().value())
                 .name(a.getName().value())
                 .balance(a.getBalance().value())
+                .accountNumber(a.getAccountNumber().value())
+                .sortCode(a.getSortCode().value())
+                .type(a.getType())
+                .currency(a.getCurrency().getCurrencyCode())
+                .createdTimestamp(a.getCreatedTimestamp())
+                .updatedTimestamp(a.getUpdatedTimestamp())
                 .build();
     }
 
@@ -55,7 +62,13 @@ public class AccountRepositoryAdapter implements AccountRepository {
                 AccountId.of(e.getId()),
                 UserId.of(e.getUserId()),
                 new AccountName(e.getName()),
-                new Balance(e.getBalance())
+                new Balance(e.getBalance()),
+                new AccountNumber(e.getAccountNumber()),
+                new SortCode(e.getSortCode()),
+                e.getType(),
+                Currency.getInstance(e.getCurrency()),
+                e.getCreatedTimestamp(),
+                e.getUpdatedTimestamp()
         );
     }
 }

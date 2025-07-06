@@ -1,9 +1,6 @@
 package com.eaglebank.eaglebankapp.controller;
 
-import com.eaglebank.eaglebankdomain.account.Account;
-import com.eaglebank.eaglebankdomain.account.AccountId;
-import com.eaglebank.eaglebankdomain.account.AccountName;
-import com.eaglebank.eaglebankdomain.account.Balance;
+import com.eaglebank.eaglebankdomain.account.*;
 import com.eaglebank.eaglebankdomain.exception.ForbiddenException;
 import com.eaglebank.eaglebankdomain.exception.ResourceNotFoundException;
 import com.eaglebank.eaglebankdomain.user.UserId;
@@ -21,6 +18,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,30 +64,47 @@ class AccountControllerTest {
     @DisplayName("POST   /v1/accounts    → 201 CREATED")
     void createAccountSuccess() throws Exception {
         AccountName name = new AccountName("My Savings");
-        Balance initialBal = new Balance(BigDecimal.ZERO);
+        Instant now = Instant.now();
         Account acct = Account.rehydrate(
                 AccountId.of(ACCT_ID),
                 UserId.of(USER_ID),
                 name,
-                initialBal
+                new Balance(BigDecimal.ZERO),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                Currency.getInstance("GBP"),
+                now,
+                now
         );
 
         given(service.createAccount(
                 eq(UserId.of(USER_ID)),
-                eq(name)
+                eq(name),
+                eq(AccountType.SAVINGS)
         )).willReturn(acct);
 
         mvc.perform(post(BASE)
                         .principal(auth())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"My Savings\"}")
+                        .content("""
+                        {
+                            "name": "My Savings",
+                            "type": "SAVINGS",
+                            "currency": "GBP"
+                        }
+                        """)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", BASE + "/" + ACCT_ID_STR))
                 .andExpect(jsonPath("$.id").value(ACCT_ID_STR))
                 .andExpect(jsonPath("$.name").value("My Savings"))
                 .andExpect(jsonPath("$.ownerId").value(USER_ID_STR))
-                .andExpect(jsonPath("$.balance").value(0));
+                .andExpect(jsonPath("$.balance").value(0))
+                .andExpect(jsonPath("$.accountNumber").value("12345678"))
+                .andExpect(jsonPath("$.sortCode").value("123456"))
+                .andExpect(jsonPath("$.type").value("SAVINGS"))
+                .andExpect(jsonPath("$.currency").value("GBP"));
     }
 
     @Test
@@ -105,17 +121,30 @@ class AccountControllerTest {
     @Test
     @DisplayName("GET    /v1/accounts    → 200 OK (list)")
     void listAccountsSuccess() throws Exception {
+        Instant now = Instant.now();
         Account a1 = Account.rehydrate(
                 AccountId.of(UUID.randomUUID()),
                 UserId.of(USER_ID),
                 new AccountName("A"),
-                new Balance(BigDecimal.TEN)
+                new Balance(BigDecimal.TEN),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.CHECKING,
+                Currency.getInstance("GBP"),
+                now,
+                now
         );
         Account a2 = Account.rehydrate(
                 AccountId.of(UUID.randomUUID()),
                 UserId.of(USER_ID),
                 new AccountName("B"),
-                new Balance(BigDecimal.valueOf(5))
+                new Balance(BigDecimal.valueOf(5)),
+                new AccountNumber("87654321"),
+                new SortCode("123456"),
+                AccountType.SAVINGS,
+                Currency.getInstance("GBP"),
+                now,
+                now
         );
         given(service.listAccounts(UserId.of(USER_ID)))
                 .willReturn(List.of(a1, a2));
@@ -132,11 +161,18 @@ class AccountControllerTest {
     @Test
     @DisplayName("GET    /v1/accounts/{id} → 200 OK")
     void fetchAccountSuccess() throws Exception {
+        Instant now = Instant.now();
         Account acct = Account.rehydrate(
                 AccountId.of(ACCT_ID),
                 UserId.of(USER_ID),
                 new AccountName("X"),
-                new Balance(BigDecimal.valueOf(99))
+                new Balance(BigDecimal.valueOf(99)),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.CHECKING,
+                Currency.getInstance("GBP"),
+                now,
+                now
         );
         given(service.fetchAccount(
                 eq(AccountId.of(ACCT_ID)),
@@ -150,7 +186,11 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.id").value(ACCT_ID_STR))
                 .andExpect(jsonPath("$.name").value("X"))
                 .andExpect(jsonPath("$.ownerId").value(USER_ID_STR))
-                .andExpect(jsonPath("$.balance").value(99));
+                .andExpect(jsonPath("$.balance").value(99))
+                .andExpect(jsonPath("$.accountNumber").value("12345678"))
+                .andExpect(jsonPath("$.sortCode").value("123456"))
+                .andExpect(jsonPath("$.type").value("CHECKING"))
+                .andExpect(jsonPath("$.currency").value("GBP"));
     }
 
     @Test
@@ -180,11 +220,18 @@ class AccountControllerTest {
     @Test
     @DisplayName("PATCH  /v1/accounts/{id} → 200 OK")
     void updateAccountSuccess() throws Exception {
+        Instant now = Instant.now();
         Account updated = Account.rehydrate(
                 AccountId.of(ACCT_ID),
                 UserId.of(USER_ID),
                 new AccountName("NewName"),
-                new Balance(BigDecimal.ZERO)
+                new Balance(BigDecimal.ZERO),
+                new AccountNumber("12345678"),
+                new SortCode("123456"),
+                AccountType.CHECKING,
+                Currency.getInstance("GBP"),
+                now,
+                now
         );
         given(service.updateAccount(
                 eq(AccountId.of(ACCT_ID)),

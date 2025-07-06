@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +12,8 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
     const [isCreatingTransaction, setIsCreatingTransaction] = useState(false);
     const [transactionForm, setTransactionForm] = useState({
         type: 'DEPOSIT',
-        amount: ''
+        amount: '',
+        currency: account?.currency || 'GBP'
     });
 
     useEffect(() => {
@@ -32,6 +32,16 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
             console.error('Failed to load account:', error);
         }
     };
+
+    const getCurrencySymbol = (currencyCode) => {
+        const symbols = {
+            'GBP': '£',
+            'USD': '$',
+            'EUR': '€'
+        };
+        return symbols[currencyCode] || currencyCode;
+    };
+
 
     const loadTransactions = async () => {
         try {
@@ -55,18 +65,37 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
         }
     };
 
+    const validateTransaction = (form) => {
+        if (form.currency !== account.currency) {
+            throw new Error(`Transaction currency must match account currency (${account.currency})`);
+        }
+        if (form.amount <= 0) {
+            throw new Error('Amount must be greater than 0');
+        }
+        return true;
+    };
+
     const handleCreateTransaction = async (e) => {
         e.preventDefault();
         try {
-            await api.post(`/v1/accounts/${accountId}/transactions`, transactionForm);
-            setIsCreatingTransaction(false);
-            setTransactionForm({ type: 'DEPOSIT', amount: '' });
-            loadAccount();
-            loadTransactions();
+            const formData = {
+                ...transactionForm,
+                currency: account.currency
+            };
+        
+            if (validateTransaction(formData)) {
+                await api.post(`/v1/accounts/${accountId}/transactions`, formData);
+                setIsCreatingTransaction(false);
+                setTransactionForm({ type: 'DEPOSIT', amount: '', currency: account.currency });
+                loadAccount();
+                loadTransactions();
+            }
         } catch (error) {
             console.error('Failed to create transaction:', error);
+            alert(error.response?.data?.message || error.message);
         }
     };
+
 
     const handleDeleteAccount = async () => {
         if (window.confirm('Are you sure you want to delete this account? This cannot be undone.')) {
@@ -82,6 +111,7 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
             }
         }
     };
+
 
     if (!account) return <div>Loading...</div>;
 
@@ -123,7 +153,14 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
                         </form>
                     ) : (
                         <>
-                            <h2 className="text-xl font-bold">{account.name}</h2>
+                            <div>
+                                <h2 className="text-xl font-bold">{account.name}</h2>
+                                <div className="text-gray-500">
+                                    Type: {account.type}
+                                    <span className="mx-2">•</span>
+                                    Currency: {account.currency}
+                                </div>
+                            </div>
                             <div className="space-x-2">
                                 <button
                                     onClick={() => setIsEditing(true)}
@@ -141,8 +178,11 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
                         </>
                     )}
                 </div>
-                <div className="text-2xl font-bold">Balance: ${account.balance}</div>
+                <div className="text-2xl font-bold">
+                    Balance: {account.balance} {account.currency}
+                </div>
             </div>
+
 
             <div className="bg-white p-4 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-4">
@@ -192,7 +232,9 @@ export default function AccountDetails({ accountId, onAccountDeleted }) {
                         <div key={transaction.id} className="p-2 border rounded">
                             <div className="flex justify-between">
                                 <span className={transaction.type === 'DEPOSIT' ? 'text-green-600' : 'text-red-600'}>
-                                    {transaction.type === 'DEPOSIT' ? '+' : '-'}${transaction.amount}
+                                    {transaction.type === 'DEPOSIT' ? '+' : '-'}
+                                    {getCurrencySymbol(transaction.currency)}
+                                    {transaction.amount}
                                 </span>
                                 <span className="text-gray-500">
                                     {new Date(transaction.timestamp).toLocaleString()}

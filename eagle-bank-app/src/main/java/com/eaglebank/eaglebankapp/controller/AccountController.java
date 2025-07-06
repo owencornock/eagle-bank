@@ -1,20 +1,23 @@
 package com.eaglebank.eaglebankapp.controller;
 
-import com.eaglebank.eaglebankdomain.account.Account;
-import com.eaglebank.eaglebankdomain.account.AccountId;
-import com.eaglebank.eaglebankdomain.account.AccountName;
+import com.eaglebank.eaglebankdomain.account.*;
 import com.eaglebank.eaglebankdomain.user.UserId;
 import com.eaglebank.eaglebanklogic.account.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -30,7 +33,9 @@ public class AccountController {
     }
 
     public record CreateAccountRequest(
-            @NotBlank @Size(max = 100) String name
+            @NotBlank @Size(max = 100) String name,
+            @NotNull AccountType type,
+            @NotBlank @Pattern(regexp = "[A-Z]{3}", message = "Currency must be a valid 3-letter ISO code") String currency
     ) {}
 
     public record UpdateAccountRequest(
@@ -41,7 +46,13 @@ public class AccountController {
             String id,
             String name,
             String ownerId,
-            java.math.BigDecimal balance
+            BigDecimal balance,
+            String accountNumber,
+            String sortCode,
+            AccountType type,
+            String currency,
+            Instant createdTimestamp,
+            Instant updatedTimestamp
     ) {}
 
     @Operation(summary = "Create a new bank account")
@@ -51,8 +62,11 @@ public class AccountController {
             Authentication auth
     ) {
         UserId owner = UserId.of(UUID.fromString(auth.getName()));
-        AccountName acctName = new AccountName(req.name());
-        Account created = service.createAccount(owner, acctName);
+        Account created = service.createAccount(
+                owner,
+                new AccountName(req.name()),
+                req.type()
+        );
         AccountResponse resp = toResponse(created);
         return ResponseEntity
                 .created(URI.create("/v1/accounts/" + resp.id()))
@@ -117,7 +131,13 @@ public class AccountController {
                 a.getId().value().toString(),
                 a.getName().value(),
                 a.getOwnerId().value().toString(),
-                a.getBalance().value()
+                a.getBalance().value(),
+                a.getAccountNumber().value(),
+                a.getSortCode().value(),
+                a.getType(),
+                a.getCurrency().getCurrencyCode(),
+                a.getCreatedTimestamp(),
+                a.getUpdatedTimestamp()
         );
     }
 }

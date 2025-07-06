@@ -26,20 +26,23 @@ public class UserService {
     }
 
     public User createUser(FirstName fn,
-                           LastName ln,
-                           DateOfBirth dob,
-                           EmailAddress email,
-                           String rawPassword) {
+                          LastName ln,
+                          DateOfBirth dob,
+                          EmailAddress email,
+                          PhoneNumber phoneNumber,
+                          Address address,
+                          String rawPassword) {
         if (repo.findByEmail(email).isPresent()) {
             throw new InvalidUserDataException("Email already in use");
         }
-        User u = User.create(fn, ln, dob, email, new PasswordHash(encoder.encode(rawPassword)));
+        User u = User.create(fn, ln, dob, email, phoneNumber, address,
+                new PasswordHash(encoder.encode(rawPassword)));
         return repo.save(u);
     }
 
     public User fetchUser(UserId id, UserId callerId) {
         if (!id.equals(callerId)) {
-            throw new ForbiddenException("Cannot fetch another user’s data");
+            throw new ForbiddenException("Cannot fetch another user's data");
         }
         return repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -47,15 +50,18 @@ public class UserService {
 
     @Transactional
     public User updateUser(UserId id,
-                           Optional<FirstName> firstName,
-                           Optional<LastName> lastName,
-                           Optional<DateOfBirth> dob,
-                           Optional<EmailAddress> email) {
+                          Optional<FirstName> firstName,
+                          Optional<LastName> lastName,
+                          Optional<DateOfBirth> dob,
+                          Optional<EmailAddress> email,
+                          Optional<PhoneNumber> phoneNumber,
+                          Optional<Address> address) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (email.isPresent()) {
-            if (repo.findByEmail(email.get()).isPresent()) {
+            var existingUser = repo.findByEmail(email.get());
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(id)) {
                 throw new InvalidUserDataException("Email already in use");
             }
             user = user.withEmail(email.get());
@@ -68,6 +74,12 @@ public class UserService {
         }
         if (dob.isPresent()) {
             user = user.withDob(dob.get());
+        }
+        if (phoneNumber.isPresent()) {
+            user = user.withPhoneNumber(phoneNumber.get());
+        }
+        if (address.isPresent()) {
+            user = user.withAddress(address.get());
         }
 
         return repo.save(user);

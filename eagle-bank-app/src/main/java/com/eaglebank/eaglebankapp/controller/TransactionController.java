@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Currency;
 
 @RestController
 @RequestMapping("/v1/accounts/{accountId}/transactions")
@@ -31,13 +32,15 @@ public class TransactionController {
 
     public record CreateTransactionRequest(
             @NotNull TransactionType type,
-            @NotNull @DecimalMin("0.00") BigDecimal amount
+            @NotNull @DecimalMin("0.00") BigDecimal amount,
+            @NotNull String currency
     ) {}
 
     public record TransactionResponse(
             String id,
             TransactionType type,
             BigDecimal amount,
+            String currency,
             String timestamp
     ) {}
 
@@ -51,11 +54,15 @@ public class TransactionController {
         UserId user = UserId.of(UUID.fromString(auth.getName()));
         AccountId acctId = AccountId.of(UUID.fromString(accountId));
         Transaction txn;
+        
+        Currency currency = Currency.getInstance(req.currency());
+        
         if (req.type() == TransactionType.DEPOSIT) {
             txn = service.deposit(acctId, user, new Amount(req.amount()));
         } else {
             txn = service.withdraw(acctId, user, new Amount(req.amount()));
         }
+        
         TransactionResponse resp = toResponse(txn);
         return ResponseEntity.created(URI.create(
                 "/v1/accounts/" + accountId + "/transactions/" + resp.id()
@@ -97,6 +104,7 @@ public class TransactionController {
                 t.getId().value().toString(),
                 t.getType(),
                 t.getAmount().value(),
+                t.getCurrency().getCurrencyCode(),
                 t.getTimestamp().toString()
         );
     }

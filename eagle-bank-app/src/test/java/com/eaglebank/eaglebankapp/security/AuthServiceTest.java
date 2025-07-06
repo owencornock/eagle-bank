@@ -3,6 +3,7 @@ package com.eaglebank.eaglebankapp.security;
 import com.eaglebank.eaglebankdomain.exception.InvalidUserDataException;
 import com.eaglebank.eaglebankdomain.user.*;
 import com.eaglebank.eaglebanklogic.user.UserService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +36,20 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
+    private PhoneNumber phone;
+    private Address address;
+
+    @BeforeEach
+    void setUp() {
+        phone = new PhoneNumber("+447911123456");
+        address = new Address(
+            "123 High Street",
+            "London",
+            "Greater London",
+            "SW1A 1AA"
+        );
+    }
+
     @Test
     void shouldLoginSuccessfully() {
         // Arrange
@@ -49,6 +64,8 @@ class AuthServiceTest {
                 new LastName("Doe"),
                 new DateOfBirth(LocalDate.now().minusYears(25)),
                 new EmailAddress(email),
+                phone,
+                address,
                 new PasswordHash(hashedPassword)
         );
         // Use reflection to set the ID since it's normally generated
@@ -69,6 +86,37 @@ class AuthServiceTest {
     }
 
     @Test
+    void shouldThrowBadCredentialsWhenPasswordDoesNotMatch() {
+        // Arrange
+        String email = "user@example.com";
+        String password = "wrong_password";
+        String hashedPassword = "hashed_password";
+
+        User user = User.create(
+                new FirstName("John"),
+                new LastName("Doe"),
+                new DateOfBirth(LocalDate.now().minusYears(25)),
+                new EmailAddress(email),
+                phone,
+                address,
+                new PasswordHash(hashedPassword)
+        );
+
+        when(userService.findByEmail(new EmailAddress(email))).thenReturn(Optional.of(user));
+        when(encoder.matches(password, hashedPassword)).thenReturn(false);
+
+        // Act & Assert
+        BadCredentialsException exception = assertThrows(BadCredentialsException.class,
+                () -> authService.login(email, password)
+        );
+        assertEquals("Invalid login", exception.getMessage());
+
+        verify(userService).findByEmail(new EmailAddress(email));
+        verify(encoder).matches(password, hashedPassword);
+        verifyNoInteractions(jwt);
+    }
+
+    @Test
     void shouldThrowBadCredentialsWhenUserNotFound() {
         // Arrange
         String email = "nonexistent@example.com";
@@ -84,35 +132,6 @@ class AuthServiceTest {
 
         verify(userService).findByEmail(new EmailAddress(email));
         verifyNoInteractions(encoder);
-        verifyNoInteractions(jwt);
-    }
-
-    @Test
-    void shouldThrowBadCredentialsWhenPasswordDoesNotMatch() {
-        // Arrange
-        String email = "user@example.com";
-        String password = "wrong_password";
-        String hashedPassword = "hashed_password";
-
-        User user = User.create(
-                new FirstName("John"),
-                new LastName("Doe"),
-                new DateOfBirth(LocalDate.now().minusYears(25)),
-                new EmailAddress(email),
-                new PasswordHash(hashedPassword)
-        );
-
-        when(userService.findByEmail(new EmailAddress(email))).thenReturn(Optional.of(user));
-        when(encoder.matches(password, hashedPassword)).thenReturn(false);
-
-        // Act & Assert
-        BadCredentialsException exception = assertThrows(BadCredentialsException.class,
-                () -> authService.login(email, password)
-        );
-        assertEquals("Invalid login", exception.getMessage());
-
-        verify(userService).findByEmail(new EmailAddress(email));
-        verify(encoder).matches(password, hashedPassword);
         verifyNoInteractions(jwt);
     }
 
