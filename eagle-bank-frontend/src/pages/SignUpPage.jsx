@@ -17,7 +17,12 @@ export default function SignupPage() {
             lastName: e.target.lastName.value,
             email: e.target.email.value,
             password: e.target.password.value,
-            dob: e.target.dob.value
+            dob: e.target.dob.value,
+            phoneNumber: e.target.phoneNumber.value,
+            addressLine1: e.target.addressLine1.value,
+            addressTown: e.target.addressTown.value,
+            addressCounty: e.target.addressCounty.value,
+            addressPostcode: e.target.addressPostcode.value
         };
 
         try {
@@ -69,6 +74,43 @@ export default function SignupPage() {
                             placeholder="Email address"
                         />
                         <input
+                            name="phoneNumber"
+                            type="tel"
+                            required
+                            pattern="\+[1-9]\d{1,14}"
+                            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Phone Number (e.g., +447911123456)"
+                        />
+                        <input
+                            name="addressLine1"
+                            type="text"
+                            required
+                            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Address Line 1"
+                        />
+                        <input
+                            name="addressTown"
+                            type="text"
+                            required
+                            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Town/City"
+                        />
+                        <input
+                            name="addressCounty"
+                            type="text"
+                            required
+                            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="County"
+                        />
+                        <input
+                            name="addressPostcode"
+                            type="text"
+                            required
+                            pattern="^[A-Z]{1,2}[0-9R][0-9A-Z]? [0-9][A-Z]{2}$"
+                            className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                            placeholder="Postcode (e.g., SW1A 1AA)"
+                        />
+                        <input
                             name="password"
                             type="password"
                             required
@@ -82,7 +124,6 @@ export default function SignupPage() {
                             className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                         />
                     </div>
-
                     <div>
                         <button
                             type="submit"

@@ -34,4 +34,7 @@ public class TransactionEntity {
 
     @Column(nullable = false)
     private Instant timestamp;
+
+    @Column(nullable = false, length = 3)
+    private String currency;
 }

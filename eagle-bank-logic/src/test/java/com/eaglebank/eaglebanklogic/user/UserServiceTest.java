@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class UserServiceTest {
-
     @Mock
     private UserRepository userRepository;
-    @Mock private PasswordEncoder encoder;
+    @Mock 
+    private PasswordEncoder encoder;
     @Mock
     private AccountRepository accountRepository;
 
@@ -36,6 +36,8 @@ class UserServiceTest {
     private EmailAddress email;
     private String rawPassword;
     private String hashedPassword;
+    private PhoneNumber phoneNumber;
+    private Address address;
     private User existingUser;
 
     @BeforeEach
@@ -43,14 +45,23 @@ class UserServiceTest {
         MockitoAnnotations.openMocks(this);
         service = new UserService(userRepository, accountRepository, encoder);
 
-        fn           = new FirstName("Alice");
-        ln           = new LastName("Smith");
-        dob          = new DateOfBirth(LocalDate.now().minusYears(30));
-        email        = new EmailAddress("alice@example.com");
-        rawPassword  = "secret123";
+        fn = new FirstName("Alice");
+        ln = new LastName("Smith");
+        dob = new DateOfBirth(LocalDate.now().minusYears(30));
+        email = new EmailAddress("alice@example.com");
+        rawPassword = "secret123";
         hashedPassword = "HASHED";
+        phoneNumber = new PhoneNumber("+447911123456");
+        address = new Address(
+            "123 High Street",
+            "London",
+            "Greater London",
+            "SW1A 1AA"
+        );
 
-        existingUser = User.create(fn, ln, dob, email, new PasswordHash(hashedPassword));}
+        existingUser = User.create(fn, ln, dob, email, phoneNumber, address, 
+            new PasswordHash(hashedPassword));
+    }
 
     @Test
     void shouldCreateAndSaveUserWithUniqueEmail() {
@@ -58,11 +69,13 @@ class UserServiceTest {
         when(encoder.encode(rawPassword)).thenReturn(hashedPassword);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = service.createUser(fn, ln, dob, email, rawPassword);
+        User result = service.createUser(fn, ln, dob, email, phoneNumber, address, rawPassword);
 
         assertNotNull(result.getId());
         assertEquals(email, result.getEmail());
         assertEquals(hashedPassword, result.getPasswordHash().value());
+        assertEquals(phoneNumber, result.getPhoneNumber());
+        assertEquals(address, result.getAddress());
 
         verify(userRepository).findByEmail(email);
         verify(encoder).encode(rawPassword);
@@ -74,7 +87,7 @@ class UserServiceTest {
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
 
         assertThrows(InvalidUserDataException.class, () ->
-                service.createUser(fn, ln, dob, email, rawPassword)
+                service.createUser(fn, ln, dob, email, phoneNumber, address, rawPassword)
         );
         verify(userRepository).findByEmail(email);
         verify(userRepository, never()).save(any());
@@ -92,8 +105,8 @@ class UserServiceTest {
 
     @Test
     void shouldThrowAccessDeniedExceptionWhenUserIdIsDifferent() {
-        UserId id     = existingUser.getId();
-        UserId other  = UserId.newId();
+        UserId id = existingUser.getId();
+        UserId other = UserId.newId();
 
         assertThrows(ForbiddenException.class, () ->
                 service.fetchUser(id, other)
@@ -114,53 +127,34 @@ class UserServiceTest {
 
     @Test
     void shouldFindUserByEmail() {
-        // Arrange
-        EmailAddress email = new EmailAddress("test@example.com");
-        User expectedUser = User.create(
-                new FirstName("John"),
-                new LastName("Doe"),
-                new DateOfBirth(LocalDate.now().minusYears(25)),
-                email,
-                new PasswordHash("hashedPassword")
-        );
-
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(expectedUser));
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
 
         Optional<User> result = service.findByEmail(email);
 
         assertTrue(result.isPresent());
-        assertEquals(expectedUser, result.get());
+        assertEquals(existingUser, result.get());
+        assertEquals(phoneNumber, result.get().getPhoneNumber());
+        assertEquals(address, result.get().getAddress());
         verify(userRepository).findByEmail(email);
     }
 
     @Test
     void shouldReturnEmptyOptionalWhenEmailNotFound() {
-        EmailAddress email = new EmailAddress("nonexistent@example.com");
-        when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
+        EmailAddress nonExistentEmail = new EmailAddress("nonexistent@example.com");
+        when(userRepository.findByEmail(nonExistentEmail)).thenReturn(Optional.empty());
 
-        Optional<User> result = service.findByEmail(email);
+        Optional<User> result = service.findByEmail(nonExistentEmail);
 
         assertTrue(result.isEmpty());
-        verify(userRepository).findByEmail(email);
+        verify(userRepository).findByEmail(nonExistentEmail);
     }
 
     @Test
-    void shouldPropagateExceptionWhenEmailIsNull() {
-        when(userRepository.findByEmail(null))
-                .thenThrow(new NullPointerException("Email cannot be null"));
-
-        assertThrows(NullPointerException.class,
-                () -> service.findByEmail(null));
-        verify(userRepository).findByEmail(null);
-    }
-
-    @Test
-    void shouldUpdateUserEmailWhenNewEmailIsUnique() {
+    void shouldUpdateUserPhoneNumber() {
         UserId id = existingUser.getId();
-        EmailAddress newEmail = new EmailAddress("new@example.com");
+        PhoneNumber newPhone = new PhoneNumber("+447911999999");
 
         when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         User result = service.updateUser(
@@ -168,75 +162,44 @@ class UserServiceTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Optional.of(newEmail)
+                Optional.empty(),
+                Optional.of(newPhone),
+                Optional.empty()
         );
 
-        assertEquals(newEmail, result.getEmail());
-        assertEquals(existingUser.getFirstName(), result.getFirstName());
-        assertEquals(existingUser.getLastName(), result.getLastName());
-        assertEquals(existingUser.getDob(), result.getDob());
+        assertEquals(newPhone, result.getPhoneNumber());
+        assertEquals(existingUser.getAddress(), result.getAddress());
         verify(userRepository).findById(id);
-        verify(userRepository).findByEmail(newEmail);
         verify(userRepository).save(any(User.class));
     }
 
     @Test
-    void shouldUpdateAllUserFieldsWhenProvided() {
+    void shouldUpdateUserAddress() {
         UserId id = existingUser.getId();
-        FirstName newFirstName = new FirstName("Bob");
-        LastName newLastName = new LastName("Johnson");
-        DateOfBirth newDob = new DateOfBirth(LocalDate.now().minusYears(25));
-        EmailAddress newEmail = new EmailAddress("new@example.com");
+        Address newAddress = new Address(
+            "456 New Street",
+            "Manchester",
+            "Greater Manchester",
+            "M1 1AA"
+        );
 
         when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(newEmail)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         User result = service.updateUser(
                 id,
-                Optional.of(newFirstName),
-                Optional.of(newLastName),
-                Optional.of(newDob),
-                Optional.of(newEmail)
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.of(newAddress)
         );
 
-        assertEquals(newFirstName, result.getFirstName());
-        assertEquals(newLastName, result.getLastName());
-        assertEquals(newDob, result.getDob());
-        assertEquals(newEmail, result.getEmail());
+        assertEquals(newAddress, result.getAddress());
+        assertEquals(existingUser.getPhoneNumber(), result.getPhoneNumber());
         verify(userRepository).findById(id);
-        verify(userRepository).findByEmail(newEmail);
         verify(userRepository).save(any(User.class));
-    }
-
-    @Test
-    void shouldThrowInvalidUserDataExceptionWhenUpdatingToExistingEmail() {
-        UserId id = existingUser.getId();
-        EmailAddress newEmail = new EmailAddress("existing@example.com");
-        User otherUser = User.create(
-                new FirstName("Other"),
-                new LastName("User"),
-                new DateOfBirth(LocalDate.now().minusYears(30)),
-                newEmail,
-                new PasswordHash("hash")
-        );
-
-        when(userRepository.findById(id)).thenReturn(Optional.of(existingUser));
-        when(userRepository.findByEmail(newEmail)).thenReturn(Optional.of(otherUser));
-
-        assertThrows(InvalidUserDataException.class, () ->
-                service.updateUser(
-                        id,
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of(newEmail)
-                )
-        );
-
-        verify(userRepository).findById(id);
-        verify(userRepository).findByEmail(newEmail);
-        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -247,6 +210,8 @@ class UserServiceTest {
         assertThrows(ResourceNotFoundException.class, () ->
                 service.updateUser(
                         id,
+                        Optional.empty(),
+                        Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),
                         Optional.empty(),

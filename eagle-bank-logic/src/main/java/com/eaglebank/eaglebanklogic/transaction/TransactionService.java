@@ -2,6 +2,7 @@ package com.eaglebank.eaglebanklogic.transaction;
 
 import com.eaglebank.eaglebankdomain.account.Account;
 import com.eaglebank.eaglebankdomain.account.AccountId;
+import com.eaglebank.eaglebankdomain.account.AccountRepository;
 import com.eaglebank.eaglebankdomain.account.Balance;
 import com.eaglebank.eaglebankdomain.exception.ForbiddenException;
 import com.eaglebank.eaglebankdomain.exception.InvalidUserDataException;
@@ -16,14 +17,13 @@ import java.util.List;
 @Service
 public class TransactionService {
     private final TransactionRepository txnRepo;
-    private final com.eaglebank.eaglebankdomain.account.AccountRepository accountRepo;
+    private final AccountRepository accountRepo;
 
     public TransactionService(TransactionRepository txnRepo,
-                              com.eaglebank.eaglebankdomain.account.AccountRepository accountRepo) {
+                              AccountRepository accountRepo) {
         this.txnRepo = txnRepo;
         this.accountRepo = accountRepo;
     }
-
 
     @Transactional
     public Transaction deposit(AccountId accountId, UserId callerId, Amount amount) {
@@ -33,7 +33,12 @@ public class TransactionService {
             throw new ForbiddenException("Cannot deposit into another user's account");
         }
 
-        Transaction txn = Transaction.create(accountId, TransactionType.DEPOSIT, amount);
+        Transaction txn = Transaction.create(
+                accountId,
+                TransactionType.DEPOSIT,
+                amount,
+                account.getCurrency()
+        );
         txnRepo.save(txn);
 
         Balance newBalance = new Balance(account.getBalance().value().add(amount.value()));
@@ -54,7 +59,12 @@ public class TransactionService {
             throw new InvalidUserDataException("Insufficient funds");
         }
 
-        Transaction txn = Transaction.create(accountId, TransactionType.WITHDRAWAL, amount);
+        Transaction txn = Transaction.create(
+                accountId,
+                TransactionType.WITHDRAWAL,
+                amount,
+                account.getCurrency()
+        );
         txnRepo.save(txn);
 
         Balance newBalance = new Balance(account.getBalance().value().subtract(amount.value()));
@@ -85,6 +95,11 @@ public class TransactionService {
         if (!txn.getAccountId().equals(accountId)) {
             throw new ResourceNotFoundException("Transaction not found for given account");
         }
+
+        if (!txn.getCurrency().equals(account.getCurrency())) {
+            throw new InvalidUserDataException("Transaction currency does not match account currency");
+        }
+
         return txn;
     }
 }

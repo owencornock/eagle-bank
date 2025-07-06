@@ -1,14 +1,13 @@
 package com.eaglebank.eaglebanklogic.account;
 
-import com.eaglebank.eaglebankdomain.account.Account;
-import com.eaglebank.eaglebankdomain.account.AccountId;
-import com.eaglebank.eaglebankdomain.account.AccountName;
-import com.eaglebank.eaglebankdomain.account.AccountRepository;
+import com.eaglebank.eaglebankdomain.account.*;
 import com.eaglebank.eaglebankdomain.exception.ForbiddenException;
 import com.eaglebank.eaglebankdomain.exception.ResourceNotFoundException;
 import com.eaglebank.eaglebankdomain.user.UserId;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Currency;
 import java.util.List;
 
 @Service
@@ -19,8 +18,12 @@ public class AccountService {
         this.repo = repo;
     }
 
-    public Account createAccount(UserId ownerId, AccountName name) {
-        Account account = Account.create(ownerId, name);
+    public Account createAccount(
+            UserId ownerId,
+            AccountName name,
+            AccountType type
+    ) {
+        Account account = Account.create(ownerId, name, type);
         return repo.save(account);
     }
 
@@ -37,14 +40,14 @@ public class AccountService {
         return account;
     }
 
-    public Account updateAccount(AccountId id, UserId callerId, AccountName newName) {
+    @Transactional
+    public Account updateAccount(
+            AccountId id,
+            UserId callerId,
+            AccountName newName
+    ) {
         Account existing = fetchAccount(id, callerId);
-        Account updated = Account.rehydrate(
-                existing.getId(),
-                existing.getOwnerId(),
-                newName,
-                existing.getBalance()
-        );
+        Account updated = existing.withName(newName);
         return repo.save(updated);
     }
 

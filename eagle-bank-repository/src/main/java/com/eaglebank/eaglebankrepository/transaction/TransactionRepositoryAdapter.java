@@ -4,6 +4,7 @@ import com.eaglebank.eaglebankdomain.account.AccountId;
 import com.eaglebank.eaglebankdomain.transaction.*;
 import org.springframework.stereotype.Repository;
 
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,6 +44,7 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 .type(t.getType().name())
                 .amount(t.getAmount().value())
                 .timestamp(t.getTimestamp())
+                .currency(t.getCurrency().getCurrencyCode())  // Add this line
                 .build();
     }
 
@@ -52,7 +54,8 @@ public class TransactionRepositoryAdapter implements TransactionRepository {
                 AccountId.of(e.getAccountId()),
                 TransactionType.valueOf(e.getType()),
                 new Amount(e.getAmount()),
-                e.getTimestamp()
+                e.getTimestamp(),
+                Currency.getInstance(e.getCurrency())
         );
     }
 }

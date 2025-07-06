@@ -10,6 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +29,8 @@ class TransactionRepositoryAdapterTest {
         Transaction txn = Transaction.create(
                 AccountId.newId(),
                 TransactionType.DEPOSIT,
-                new Amount(new BigDecimal("100.00"))
+                new Amount(new BigDecimal("100.00")),
+                Currency.getInstance("GBP")
         );
         Transaction saved = repo.save(txn);
 
@@ -48,12 +50,15 @@ class TransactionRepositoryAdapterTest {
         Transaction deposit = Transaction.create(
                 accountId,
                 TransactionType.DEPOSIT,
-                new Amount(new BigDecimal("100.00"))
+                new Amount(new BigDecimal("100.00")),
+                Currency.getInstance("GBP")
         );
         Transaction withdrawal = Transaction.create(
                 accountId,
                 TransactionType.WITHDRAWAL,
-                new Amount(new BigDecimal("50.00"))
+                new Amount(new BigDecimal("50.00")),
+                Currency.getInstance("GBP")
+
         );
 
         repo.save(deposit);
@@ -62,7 +67,9 @@ class TransactionRepositoryAdapterTest {
         repo.save(Transaction.create(
                 AccountId.newId(),
                 TransactionType.DEPOSIT,
-                new Amount(new BigDecimal("75.00"))
+                new Amount(new BigDecimal("75.00")),
+                Currency.getInstance("GBP")
+
         ));
 
         List<Transaction> accountTxns = repo.findByAccount(accountId);
@@ -81,13 +88,15 @@ class TransactionRepositoryAdapterTest {
         AccountId accountId = AccountId.of(UUID.randomUUID());
         Amount amount = new Amount(new BigDecimal("123.45"));
         Instant timestamp = Instant.now();
+        Currency currency = Currency.getInstance("GBP");
 
         Transaction original = Transaction.rehydrate(
                 id,
                 accountId,
                 TransactionType.WITHDRAWAL,
                 amount,
-                timestamp
+                timestamp,
+                currency
         );
         Transaction saved = repo.save(original);
 
@@ -125,12 +134,14 @@ class TransactionRepositoryAdapterTest {
         Transaction deposit = Transaction.create(
                 accountId,
                 TransactionType.DEPOSIT,
-                new Amount(new BigDecimal("200.00"))
+                new Amount(new BigDecimal("200.00")),
+                Currency.getInstance("GBP")
         );
         Transaction withdrawal = Transaction.create(
                 accountId,
                 TransactionType.WITHDRAWAL,
-                new Amount(new BigDecimal("150.00"))
+                new Amount(new BigDecimal("150.00")),
+                Currency.getInstance("GBP")
         );
 
         repo.save(deposit);
@@ -151,12 +162,14 @@ class TransactionRepositoryAdapterTest {
         Transaction first = Transaction.create(
                 accountId,
                 TransactionType.DEPOSIT,
-                new Amount(new BigDecimal("100.00"))
+                new Amount(new BigDecimal("100.00")),
+                Currency.getInstance("GBP")
         );
         Transaction second = Transaction.create(
                 accountId,
                 TransactionType.WITHDRAWAL,
-                new Amount(new BigDecimal("50.00"))
+                new Amount(new BigDecimal("50.00")),
+                Currency.getInstance("GBP")
         );
 
         // Ensure there's a small delay between transactions

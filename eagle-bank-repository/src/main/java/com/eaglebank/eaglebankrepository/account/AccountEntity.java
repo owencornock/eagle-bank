@@ -1,19 +1,18 @@
 package com.eaglebank.eaglebankrepository.account;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.eaglebank.eaglebankdomain.account.AccountType;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name="accounts")
+@Table(name = "accounts")
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,5 +29,23 @@ public class AccountEntity {
 
     @Column(nullable = false)
     private BigDecimal balance;
-}
 
+    @Column(nullable = false, length = 8)
+    private String accountNumber;
+
+    @Column(nullable = false, length = 6)
+    private String sortCode;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private AccountType type;
+
+    @Column(nullable = false, length = 3)
+    private String currency;
+
+    @Column(nullable = false)
+    private Instant createdTimestamp;
+
+    @Column(nullable = false)
+    private Instant updatedTimestamp;
+}

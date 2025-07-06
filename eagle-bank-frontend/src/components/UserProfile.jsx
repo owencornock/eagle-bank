@@ -54,6 +54,11 @@ export default function UserProfile() {
             if (formData.lastName !== user.lastName) changedFields.lastName = formData.lastName;
             if (formData.email !== user.email) changedFields.email = formData.email;
             if (formData.dob !== user.dob) changedFields.dob = formData.dob;
+            if (formData.phoneNumber !== user.phoneNumber) changedFields.phoneNumber = formData.phoneNumber;
+            if (formData.addressLine1 !== user.addressLine1) changedFields.addressLine1 = formData.addressLine1;
+            if (formData.addressTown !== user.addressTown) changedFields.addressTown = formData.addressTown;
+            if (formData.addressCounty !== user.addressCounty) changedFields.addressCounty = formData.addressCounty;
+            if (formData.addressPostcode !== user.addressPostcode) changedFields.addressPostcode = formData.addressPostcode;
 
             // Only send the request if there are changes
             if (Object.keys(changedFields).length > 0) {
@@ -120,6 +125,43 @@ export default function UserProfile() {
                         placeholder="Email"
                     />
                     <input
+                        type="tel"
+                        value={formData.phoneNumber}
+                        onChange={e => setFormData({...formData, phoneNumber: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        placeholder="Phone Number"
+                        pattern="\+[1-9]\d{1,14}"
+                    />
+                    <input
+                        type="text"
+                        value={formData.addressLine1}
+                        onChange={e => setFormData({...formData, addressLine1: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        placeholder="Address Line 1"
+                    />
+                    <input
+                        type="text"
+                        value={formData.addressTown}
+                        onChange={e => setFormData({...formData, addressTown: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        placeholder="Town/City"
+                    />
+                    <input
+                        type="text"
+                        value={formData.addressCounty}
+                        onChange={e => setFormData({...formData, addressCounty: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        placeholder="County"
+                    />
+                    <input
+                        type="text"
+                        value={formData.addressPostcode}
+                        onChange={e => setFormData({...formData, addressPostcode: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        placeholder="Postcode"
+                        pattern="^[A-Z]{1,2}[0-9R][0-9A-Z]? [0-9][A-Z]{2}$"
+                    />
+                    <input
                         type="date"
                         value={formData.dob}
                         onChange={e => setFormData({...formData, dob: e.target.value})}
@@ -142,6 +184,14 @@ export default function UserProfile() {
                     <div className="space-y-2">
                         <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
                         <p><strong>Email:</strong> {user.email}</p>
+                        <p><strong>Phone:</strong> {user.phoneNumber}</p>
+                        <p><strong>Address:</strong></p>
+                        <div className="pl-4">
+                            <p>{user.addressLine1}</p>
+                            <p>{user.addressTown}</p>
+                            <p>{user.addressCounty}</p>
+                            <p>{user.addressPostcode}</p>
+                        </div>
                         <p><strong>DOB:</strong> {new Date(user.dob).toLocaleDateString()}</p>
                         <div className="flex space-x-2">
                             <button

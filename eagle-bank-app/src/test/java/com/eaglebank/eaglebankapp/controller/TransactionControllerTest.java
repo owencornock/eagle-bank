@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,13 +63,13 @@ class TransactionControllerTest {
     @Test
     @DisplayName("POST /v1/accounts/{accountId}/transactions – deposit succeeds → 201")
     void depositSuccess() throws Exception {
-        // arrange
         Transaction txn = Transaction.rehydrate(
                 TransactionId.of(TXN_ID),
                 AccountId.of(ACCT_ID),
                 TransactionType.DEPOSIT,
                 new Amount(BigDecimal.valueOf(50)),
-                Instant.now()
+                Instant.now(),
+                Currency.getInstance("GBP")
         );
         given(service.deposit(
                 eq(AccountId.of(ACCT_ID)),
@@ -76,14 +77,14 @@ class TransactionControllerTest {
                 eq(new Amount(BigDecimal.valueOf(50)))
         )).willReturn(txn);
 
-        // act + assert
         mvc.perform(post(BASE + "/" + ACCT_ID_STR + "/transactions")
                         .principal(auth())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
                                   "type":"DEPOSIT",
-                                  "amount":50
+                                  "amount":50,
+                                  "currency":"GBP"
                                 }
                                 """)
                 )
@@ -104,7 +105,8 @@ class TransactionControllerTest {
                 AccountId.of(ACCT_ID),
                 TransactionType.WITHDRAWAL,
                 new Amount(BigDecimal.valueOf(20)),
-                Instant.now()
+                Instant.now(),
+                Currency.getInstance("GBP")
         );
         given(service.withdraw(
                 eq(AccountId.of(ACCT_ID)),
@@ -118,7 +120,8 @@ class TransactionControllerTest {
                         .content("""
                                 {
                                   "type":"WITHDRAWAL",
-                                  "amount":20
+                                  "amount":20,
+                                  "currency":"GBP"
                                 }
                                 """)
                 )
@@ -149,7 +152,8 @@ class TransactionControllerTest {
                         .content("""
                                 {
                                   "type":"DEPOSIT",
-                                  "amount":10
+                                  "amount":10,
+                                  "currency":"GBP"
                                 }
                                 """)
                 )
@@ -167,7 +171,8 @@ class TransactionControllerTest {
                         .content("""
                                 {
                                   "type":"WITHDRAWAL",
-                                  "amount":5
+                                  "amount":5,
+                                  "currency":"GBP"
                                 }
                                 """)
                 )
@@ -185,16 +190,14 @@ class TransactionControllerTest {
                         .content("""
                                 {
                                   "type":"WITHDRAWAL",
-                                  "amount":100
+                                  "amount":100,
+                                  "currency":"GBP"
                                 }
                                 """)
                 )
                 .andExpect(status().isUnprocessableEntity());
     }
 
-    //
-    //--- LIST TRANSACTIONS
-    //
     @Test
     @DisplayName("GET  /v1/accounts/{accountId}/transactions – success")
     void listTransactionsSuccess() throws Exception {
@@ -203,14 +206,16 @@ class TransactionControllerTest {
                 AccountId.of(ACCT_ID),
                 TransactionType.DEPOSIT,
                 new Amount(BigDecimal.TEN),
-                Instant.now()
+                Instant.now(),
+                Currency.getInstance("GBP")
         );
         Transaction t2 = Transaction.rehydrate(
                 TransactionId.of(UUID.randomUUID()),
                 AccountId.of(ACCT_ID),
                 TransactionType.WITHDRAWAL,
                 new Amount(BigDecimal.valueOf(3)),
-                Instant.now()
+                Instant.now(),
+                Currency.getInstance("GBP")
         );
         given(service.listTransactions(
                 eq(AccountId.of(ACCT_ID)),
@@ -256,7 +261,8 @@ class TransactionControllerTest {
                 AccountId.of(ACCT_ID),
                 TransactionType.DEPOSIT,
                 new Amount(BigDecimal.ONE),
-                Instant.now()
+                Instant.now(),
+                Currency.getInstance("GBP")
         );
         given(service.fetchTransaction(
                 eq(AccountId.of(ACCT_ID)),

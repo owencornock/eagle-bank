@@ -1,15 +1,18 @@
-
 import React, { useState, useEffect } from 'react';
 import api from '../api/axiosClient';
 
 export default function AccountsList({ onSelectAccount, refreshTrigger }) {
     const [accounts, setAccounts] = useState([]);
     const [isCreating, setIsCreating] = useState(false);
-    const [newAccountName, setNewAccountName] = useState('');
+    const [newAccount, setNewAccount] = useState({
+        name: '',
+        type: 'SAVINGS',
+        currency: 'GBP'
+    });
 
     useEffect(() => {
         loadAccounts();
-    }, [refreshTrigger]); // Add refreshTrigger to dependencies
+    }, [refreshTrigger]);
 
     const loadAccounts = async () => {
         try {
@@ -23,12 +26,13 @@ export default function AccountsList({ onSelectAccount, refreshTrigger }) {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/v1/accounts', { name: newAccountName });
+            await api.post('/v1/accounts', newAccount);
             setIsCreating(false);
-            setNewAccountName('');
+            setNewAccount({ name: '', type: 'SAVINGS', currency: 'GBP' });
             loadAccounts();
         } catch (error) {
             console.error('Failed to create account:', error);
+            alert(error.response?.data?.error || 'Failed to create account');
         }
     };
 
@@ -48,14 +52,35 @@ export default function AccountsList({ onSelectAccount, refreshTrigger }) {
                 <form onSubmit={handleCreate} className="mb-4 space-y-2">
                     <input
                         type="text"
-                        value={newAccountName}
-                        onChange={e => setNewAccountName(e.target.value)}
+                        value={newAccount.name}
+                        onChange={e => setNewAccount({...newAccount, name: e.target.value})}
                         placeholder="Account Name"
                         className="w-full p-2 border rounded"
                         required
                     />
+                    <select
+                        value={newAccount.type}
+                        onChange={e => setNewAccount({...newAccount, type: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        required
+                    >
+                        <option value="SAVINGS">Savings</option>
+                        <option value="CHECKING">Checking</option>
+                    </select>
+                    <select
+                        value={newAccount.currency}
+                        onChange={e => setNewAccount({...newAccount, currency: e.target.value})}
+                        className="w-full p-2 border rounded"
+                        required
+                    >
+                        <option value="GBP">GBP</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                    </select>
                     <div className="flex space-x-2">
-                        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Create</button>
+                        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                            Create
+                        </button>
                         <button
                             type="button"
                             onClick={() => setIsCreating(false)}
@@ -75,7 +100,12 @@ export default function AccountsList({ onSelectAccount, refreshTrigger }) {
                         className="p-2 border rounded cursor-pointer hover:bg-gray-50"
                     >
                         <div className="font-bold">{account.name}</div>
-                        <div className="text-gray-600">Balance: ${account.balance}</div>
+                        <div className="text-gray-600">
+                            Balance: {account.balance} {account.currency}
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                            Type: {account.type}
+                        </div>
                     </div>
                 ))}
             </div>

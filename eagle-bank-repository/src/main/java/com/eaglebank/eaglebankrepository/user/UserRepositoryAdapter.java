@@ -35,25 +35,37 @@ public class UserRepositoryAdapter implements UserRepository {
         jpa.deleteById(user.getId().value());
     }
 
-    private UserEntity toEntity(User u) {
+    private UserEntity toEntity(User user) {
         return UserEntity.builder()
-                .id(u.getId().value())
-                .firstName(u.getFirstName().getValue())
-                .lastName(u.getLastName().getValue())
-                .dateOfBirth(u.getDob().getValue())
-                .email(u.getEmail().value())
-                .passwordHash(u.getPasswordHash().value())
+                .id(user.getId().value())
+                .firstName(user.getFirstName().getValue())
+                .lastName(user.getLastName().getValue())
+                .dateOfBirth(user.getDob().getValue())
+                .email(user.getEmail().value())
+                .passwordHash(user.getPasswordHash().value())
+                .phoneNumber(user.getPhoneNumber().value())
+                .addressLine1(user.getAddress().line1())
+                .addressTown(user.getAddress().town())
+                .addressCounty(user.getAddress().county())
+                .addressPostcode(user.getAddress().postcode())
                 .build();
     }
 
-    private User toDomain(UserEntity e) {
+    private User toDomain(UserEntity entity) {
         return User.rehydrate(
-                UserId.of(e.getId()),
-                new FirstName(e.getFirstName()),
-                new LastName(e.getLastName()),
-                new DateOfBirth(e.getDateOfBirth()),
-                new EmailAddress(e.getEmail()),
-                new PasswordHash(e.getPasswordHash())
+                UserId.of(entity.getId()),
+                new FirstName(entity.getFirstName()),
+                new LastName(entity.getLastName()),
+                new DateOfBirth(entity.getDateOfBirth()),
+                new EmailAddress(entity.getEmail()),
+                new PhoneNumber(entity.getPhoneNumber()),
+                new Address(
+                        entity.getAddressLine1(),
+                        entity.getAddressTown(),
+                        entity.getAddressCounty(),
+                        entity.getAddressPostcode()
+                ),
+                new PasswordHash(entity.getPasswordHash())
         );
     }
 }
